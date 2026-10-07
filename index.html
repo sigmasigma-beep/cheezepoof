@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🧀 Cheezey Poof Society</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --orange:#FF8C00; --accent:#e65c00; --cheese:#FFA500; --yellow:#FFD700;
+    --dark:#1a0800; --card:#fffbe8; --green:#27ae60; --red:#e74c3c; --purple:#8e44ad; --blue:#2980b9;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Nunito',sans-serif;background:radial-gradient(ellipse at top,#2d1500 0%,#0d0500 100%);min-height:100vh;overflow-x:hidden;color:#222;}
+  #bg-canvas{position:fixed;inset:0;pointer-events:none;z-index:0;}
+
+  .screen{display:none;position:relative;z-index:1;min-height:100vh;}
+  .screen.active{display:block;}
+  #screen-login{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1rem;min-height:100vh;}
+
+  .logo-wrap{text-align:center;margin-bottom:2rem;}
+  .logo-emoji{font-size:3.2rem;display:block;}
+  .logo-main{font-family:'Fredoka One',cursive;font-size:clamp(2.4rem,8vw,4.2rem);background:linear-gradient(135deg,#FFD700,#FF8C00,#FFD700);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;filter:drop-shadow(0 4px 12px rgba(255,140,0,.5));line-height:1.1;}
+
+  .card{background:var(--card);border-radius:24px;padding:2rem;box-shadow:0 20px 60px rgba(0,0,0,.5),0 0 0 2px rgba(255,200,0,.3);width:100%;max-width:420px;}
+  .card h2{font-family:'Fredoka One',cursive;color:var(--accent);font-size:1.5rem;margin-bottom:1.3rem;text-align:center;}
+  .login-tabs{display:flex;gap:.5rem;margin-bottom:1.3rem;}
+  .login-tab{flex:1;padding:.6rem;border-radius:12px;cursor:pointer;font-family:'Fredoka One',cursive;font-size:1rem;text-align:center;background:#f0e0c0;color:var(--accent);transition:all .15s;}
+  .login-tab.active{background:linear-gradient(135deg,var(--orange),var(--accent));color:#fff;}
+
+  label{display:block;font-weight:700;color:#555;font-size:.8rem;letter-spacing:1px;text-transform:uppercase;margin-bottom:.35rem;margin-top:.9rem;}
+  input,select,textarea{width:100%;padding:.8rem 1rem;border:2px solid #e0d0a0;border-radius:12px;font-size:1rem;font-family:'Nunito',sans-serif;font-weight:700;background:#fff;color:var(--dark);outline:none;transition:border-color .2s,box-shadow .2s;}
+  input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 0 0 4px rgba(255,140,0,.15);}
+  textarea{resize:vertical;min-height:70px;}
+
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;padding:.85rem 1.6rem;border:none;border-radius:14px;font-family:'Fredoka One',cursive;font-size:1.05rem;cursor:pointer;transition:all .18s;width:100%;margin-top:1.3rem;}
+  .btn-primary{background:linear-gradient(135deg,var(--orange),var(--accent));color:#fff;box-shadow:0 6px 20px rgba(230,92,0,.4);}
+  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(230,92,0,.5);}
+  .btn-secondary{background:#fff3d0;color:var(--accent);border:2px solid var(--cheese);margin-top:.7rem;}
+  .btn-secondary:hover{background:#ffe9a0;}
+  .btn-green{background:linear-gradient(135deg,#27ae60,#1e8449);color:#fff;box-shadow:0 6px 20px rgba(39,174,96,.4);}
+  .btn-red{background:linear-gradient(135deg,#e74c3c,#c0392b);color:#fff;box-shadow:0 6px 20px rgba(231,76,60,.4);}
+  .btn-purple{background:linear-gradient(135deg,#8e44ad,#6c3483);color:#fff;box-shadow:0 6px 20px rgba(142,68,173,.4);}
+  .btn-sm{padding:.5rem 1rem;font-size:.85rem;width:auto;margin-top:0;border-radius:10px;}
+  .btn-xs{padding:.35rem .7rem;font-size:.75rem;width:auto;margin-top:0;border-radius:8px;}
+
+  .error-msg{background:#fde8e8;color:var(--red);border:2px solid #f5c6c6;border-radius:10px;padding:.65rem 1rem;margin-top:.9rem;font-weight:700;font-size:.88rem;display:none;}
+  .success-msg{background:#e8fde8;color:var(--green);border:2px solid #c6f5c6;border-radius:10px;padding:.65rem 1rem;margin-top:.9rem;font-weight:700;font-size:.88rem;display:none;}
+
+  .app-header{background:linear-gradient(135deg,#1a0800,#2d1200);border-bottom:3px solid var(--orange);padding:1rem 1.5rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 4px 20px rgba(0,0,0,.5);}
+  .app-logo{font-family:'Fredoka One',cursive;font-size:1.5rem;background:linear-gradient(135deg,#FFD700,#FF8C00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+  .header-user{text-align:right;color:#FFD700;font-size:.78rem;font-weight:700;line-height:1.3;}
+  .header-user span{display:block;color:#fff;font-size:.95rem;}
+  .app-content{padding-bottom:70px;}
+
+  .balance-section{background:linear-gradient(135deg,var(--orange),var(--accent));margin:1.5rem;border-radius:24px;padding:2rem;text-align:center;box-shadow:0 10px 40px rgba(230,92,0,.4);position:relative;overflow:hidden;}
+  .balance-section::before{content:'🧀';position:absolute;font-size:8rem;right:-1.5rem;top:-1rem;opacity:.15;}
+  .balance-label{color:rgba(255,255,255,.8);font-size:.85rem;letter-spacing:2px;text-transform:uppercase;font-weight:700;}
+  .balance-amount{font-family:'Fredoka One',cursive;font-size:clamp(2.4rem,8vw,3.8rem);color:#fff;line-height:1.1;margin:.3rem 0;}
+  .balance-unit{color:rgba(255,255,255,.75);font-size:.9rem;font-weight:700;}
+  .cred-badge{display:inline-block;background:rgba(255,255,255,.2);border-radius:20px;padding:.3rem 1rem;color:#fff;font-size:.8rem;font-weight:700;letter-spacing:1px;margin-top:.8rem;}
+
+  .action-row{display:flex;gap:.7rem;padding:0 1.5rem;margin-bottom:1.5rem;flex-wrap:wrap;}
+  .action-btn{flex:1;min-width:70px;background:var(--card);border-radius:18px;padding:1rem .5rem;text-align:center;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.15);transition:all .18s;border:2px solid transparent;}
+  .action-btn:hover{transform:translateY(-3px);border-color:var(--orange);}
+  .action-btn .ab-icon{font-size:1.7rem;display:block;margin-bottom:.25rem;}
+  .action-btn .ab-label{font-family:'Fredoka One',cursive;font-size:.76rem;color:var(--accent);}
+
+  .section-title{font-family:'Fredoka One',cursive;font-size:1.25rem;color:#FFD700;padding:0 1.5rem;margin-bottom:1rem;}
+
+  .tx-list{padding:0 1.5rem 2rem;}
+  .tx-item{background:var(--card);border-radius:16px;padding:1rem 1.1rem;margin-bottom:.7rem;display:flex;align-items:center;gap:1rem;box-shadow:0 2px 10px rgba(0,0,0,.08);border-left:5px solid transparent;}
+  .tx-item.received{border-left-color:var(--green);}
+  .tx-item.sent{border-left-color:var(--red);}
+  .tx-icon{font-size:1.7rem;}
+  .tx-info{flex:1;min-width:0;}
+  .tx-name{font-weight:800;font-size:.93rem;color:var(--dark);}
+  .tx-msg{font-size:.78rem;color:#888;margin-top:.1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .tx-date{font-size:.72rem;color:#aaa;}
+  .tx-amount{font-family:'Fredoka One',cursive;font-size:1.15rem;white-space:nowrap;}
+  .tx-amount.pos{color:var(--green);}
+  .tx-amount.neg{color:var(--red);}
+  .tx-empty{text-align:center;color:#ccc;padding:2rem;font-weight:700;}
+
+  .dir-header,.wall-header,.ledger-header,.admin-header{background:linear-gradient(135deg,#0a1a2e,#142840);border-bottom:3px solid var(--blue);padding:1rem 1.5rem;display:flex;align-items:center;gap:1rem;box-shadow:0 4px 20px rgba(0,0,0,.5);}
+  .dir-header h1,.wall-header h1,.ledger-header h1,.admin-header h1{font-family:'Fredoka One',cursive;background:linear-gradient(135deg,#74b9ff,#2980b9);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-size:1.4rem;flex:1;}
+  .admin-header{background:linear-gradient(135deg,#1a0020,#2d0040);border-bottom-color:var(--purple);}
+  .admin-header h1{background:linear-gradient(135deg,#da8fff,#9b59b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+  .wall-header{background:linear-gradient(135deg,#1a0800,#2d1200);border-bottom-color:var(--orange);}
+  .wall-header h1{background:linear-gradient(135deg,#FFD700,#FF8C00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+
+  .dir-search,.wall-composer-wrap{padding:1rem 1.5rem;}
+  .dir-list{padding:0 1.5rem 2rem;}
+  .dir-item{background:var(--card);border-radius:14px;padding:.9rem 1.2rem;margin-bottom:.6rem;display:flex;align-items:center;gap:1rem;box-shadow:0 2px 8px rgba(0,0,0,.08);border-left:4px solid var(--blue);}
+  .avatar-circle{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--orange),var(--accent));display:flex;align-items:center;justify-content:center;font-family:'Fredoka One',cursive;color:#fff;font-size:1.05rem;flex-shrink:0;overflow:hidden;}
+  .avatar-circle img{width:100%;height:100%;object-fit:cover;}
+  .dir-name{font-weight:800;color:var(--dark);font-size:.93rem;}
+  .dir-id{font-size:.78rem;color:#888;margin-top:.1rem;}
+  .dir-badge{font-size:.68rem;background:#fff3d0;color:var(--accent);border-radius:8px;padding:.15rem .5rem;font-weight:700;}
+  .admin-badge{background:#f0e0ff;color:var(--purple);}
+
+  /* Wall */
+  #wallboard{margin:1.2rem 1.5rem 2rem;background:linear-gradient(#7a4a23,#5e3817);border-radius:18px;padding:1.4rem;display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:1.3rem;}
+  .note{background:#ffb55e;border-radius:8px;padding:12px 11px 9px;position:relative;box-shadow:0 8px 14px rgba(0,0,0,.35);transform:rotate(var(--r,-1.5deg));}
+  .note:nth-child(3n){--r:1.5deg;background:#ffd27f;}
+  .note:nth-child(3n+1){--r:-2deg;}
+  .note:nth-child(3n+2){--r:1deg;background:#ffa94d;}
+  .note .pin{width:13px;height:13px;border-radius:50%;background:radial-gradient(circle at 30% 30%,#fff,#c0392b 60%,#7a1d12);position:absolute;top:-7px;left:50%;transform:translateX(-50%);box-shadow:0 3px 3px rgba(0,0,0,.4);}
+  .note h3{margin:6px 0 4px;font-family:'Fredoka One',cursive;font-size:1rem;color:var(--accent);word-break:break-word;}
+  .note p.body{white-space:pre-wrap;word-break:break-word;margin:0 0 8px;color:#3a2412;font-weight:700;font-size:.9rem;}
+  .note img.post-img{width:100%;border-radius:6px;margin-bottom:8px;display:block;}
+  .note .meta{display:flex;align-items:center;gap:6px;font-size:.74rem;color:#5c3a16;margin-bottom:6px;font-weight:800;}
+  .note .meta .avatar-circle{width:20px;height:20px;font-size:.65rem;}
+  .note .footer{display:flex;justify-content:space-between;align-items:center;}
+  .like-btn{background:#fff;border:none;border-radius:999px;padding:4px 10px;font-weight:800;cursor:pointer;color:var(--accent);font-size:.8rem;}
+  .like-btn.liked{background:var(--accent);color:#fff;}
+  .remove-btn{background:none;border:none;color:#7a1d12;font-weight:800;cursor:pointer;font-size:.74rem;text-decoration:underline;}
+
+  .ledger-list{padding:0 1.5rem 2rem;}
+
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:500;align-items:center;justify-content:center;padding:1rem;}
+  .modal-overlay.active{display:flex;}
+  .modal{background:var(--card);border-radius:24px;padding:2rem;width:100%;max-width:420px;box-shadow:0 30px 80px rgba(0,0,0,.6);position:relative;max-height:90vh;overflow-y:auto;}
+  .modal h2{font-family:'Fredoka One',cursive;color:var(--accent);font-size:1.4rem;margin-bottom:1.3rem;text-align:center;}
+  .modal-close{position:absolute;top:1rem;right:1rem;background:#f0e0c0;border:none;border-radius:50%;width:30px;height:30px;font-size:1rem;cursor:pointer;color:var(--accent);font-weight:900;}
+  .modal-close:hover{background:var(--orange);color:#fff;}
+  .lookup-result{background:#fff3d0;border:2px solid var(--cheese);border-radius:12px;padding:.7rem 1rem;margin-top:.5rem;font-weight:700;color:var(--dark);display:none;}
+
+  #admin-lock-overlay{position:fixed;inset:0;background:rgba(10,0,30,.97);z-index:900;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;}
+  #admin-lock-overlay .lock-icon{font-size:3.6rem;}
+  #admin-lock-overlay h2{font-family:'Fredoka One',cursive;color:#da8fff;font-size:1.7rem;}
+  #admin-lock-overlay input{max-width:220px;text-align:center;letter-spacing:6px;font-size:1.3rem;}
+
+  .admin-tabs{display:flex;gap:.4rem;padding:1rem 1.5rem;overflow-x:auto;}
+  .admin-tab{padding:.42rem 1rem;border-radius:20px;background:rgba(255,255,255,.08);color:#bbb;border:2px solid transparent;cursor:pointer;font-family:'Fredoka One',cursive;font-size:.82rem;white-space:nowrap;transition:all .18s;}
+  .admin-tab.active,.admin-tab:hover{background:var(--purple);color:#fff;border-color:#da8fff;}
+  .admin-panel{padding:0 1.5rem 2rem;display:none;}
+  .admin-panel.active{display:block;}
+  .admin-card{background:var(--card);border-radius:20px;padding:1.4rem;margin-bottom:1rem;box-shadow:0 4px 20px rgba(0,0,0,.15);}
+  .admin-card h3{font-family:'Fredoka One',cursive;color:var(--purple);font-size:1.15rem;margin-bottom:1rem;}
+  .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:.7rem;margin-bottom:1.3rem;}
+  .stat-box{background:var(--card);border-radius:16px;padding:1rem;text-align:center;box-shadow:0 2px 10px rgba(0,0,0,.1);}
+  .stat-box .sv{font-family:'Fredoka One',cursive;font-size:1.35rem;color:var(--accent);}
+  .stat-box .sl{font-size:.7rem;color:#888;font-weight:700;text-transform:uppercase;margin-top:.2rem;}
+  .account-row{background:#f8f0ff;border-radius:14px;padding:.85rem 1.05rem;margin-bottom:.6rem;display:flex;align-items:center;gap:.7rem;border-left:4px solid var(--purple);}
+  .account-row .ar-info{flex:1;min-width:0;}
+  .account-row .ar-name{font-weight:800;font-size:.88rem;}
+  .account-row .ar-id{font-size:.74rem;color:#888;}
+  .account-row .ar-bal{font-family:'Fredoka One',cursive;color:var(--green);font-size:.98rem;white-space:nowrap;}
+  .account-row .ar-actions{display:flex;gap:.3rem;}
+
+  #gift-overlay{display:none;position:fixed;inset:0;z-index:1000;pointer-events:none;}
+  #gift-overlay.active{display:block;}
+  .gift-box{position:absolute;font-size:3.6rem;animation:giftFly 2.3s ease-in forwards;filter:drop-shadow(0 8px 20px rgba(255,200,0,.8));}
+  @keyframes giftFly{0%{transform:scale(1) translateY(0) rotate(0);opacity:1;}30%{transform:scale(1.3) translateY(-80px) rotate(-10deg);opacity:1;}60%{transform:scale(.9) translateY(-250px) rotate(15deg);opacity:.9;}100%{transform:scale(.2) translateY(-650px) rotate(30deg);opacity:0;}}
+  .gift-sparkle{position:absolute;font-size:1.4rem;animation:sparklePop 1.1s ease-out forwards;}
+  @keyframes sparklePop{0%{transform:scale(0) translate(0,0);opacity:1;}60%{opacity:1;}100%{transform:scale(1.5) translate(var(--dx),var(--dy));opacity:0;}}
+  .gift-msg-popup{position:fixed;top:50%;left:50%;transform:translate(-50%,40px);background:linear-gradient(135deg,var(--orange),var(--accent));color:#fff;border-radius:20px;padding:1rem 2rem;font-family:'Fredoka One',cursive;font-size:1.3rem;z-index:1002;pointer-events:none;box-shadow:0 10px 40px rgba(230,92,0,.6);animation:popIn 2.3s ease forwards;text-align:center;white-space:nowrap;}
+  @keyframes popIn{0%{opacity:0;transform:translate(-50%,40px) scale(.7);}20%{opacity:1;transform:translate(-50%,0) scale(1.05);}80%{opacity:1;transform:translate(-50%,0) scale(1);}100%{opacity:0;transform:translate(-50%,-20px) scale(.9);}}
+
+  @media (max-width:480px){
+    .card{padding:1.5rem;}
+    .balance-section{margin:1rem;padding:1.5rem;}
+    .action-row{padding:0 1rem;}
+    .tx-list,.dir-list,.ledger-list{padding:0 1rem 2rem;}
+    #wallboard{margin:1rem;padding:1rem;}
+    .admin-tabs{padding:.75rem 1rem;}
+  }
+</style>
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+
+<!-- LOGIN -->
+<div class="screen active" id="screen-login">
+  <div class="logo-wrap">
+    <span class="logo-emoji">🧀</span>
+    <div class="logo-main">Cheezey Poof Society</div>
+  </div>
+  <div class="card">
+    <div class="login-tabs">
+      <div class="login-tab active" id="tab-signin" onclick="switchLoginTab('signin')">Sign In</div>
+      <div class="login-tab" id="tab-register" onclick="switchLoginTab('register')">Make Account</div>
+    </div>
+    <div id="panel-signin">
+      <label>Username</label>
+      <input type="text" id="login-username" placeholder="username">
+      <label>Password</label>
+      <input type="password" id="login-password" placeholder="••••••">
+      <div class="error-msg" id="login-error"></div>
+      <button class="btn btn-primary" onclick="doLogin()">🧀 Sign In</button>
+    </div>
+    <div id="panel-register" style="display:none">
+      <label>Choose a Username</label>
+      <input type="text" id="reg-username" placeholder="username">
+      <label>Choose a Password</label>
+      <input type="password" id="reg-password" placeholder="••••••">
+      <label>Confirm Password</label>
+      <input type="password" id="reg-password2" placeholder="••••••">
+      <label>Avatar URL (optional)</label>
+      <input type="text" id="reg-avatar" placeholder="https://...">
+      <div class="error-msg" id="reg-error"></div>
+      <div class="success-msg" id="reg-success"></div>
+      <button class="btn btn-green" onclick="doRegister()">✨ Create My Account</button>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div class="screen" id="screen-app">
+  <div class="app-header">
+    <div class="app-logo">🧀 Cheezey Poof</div>
+    <div class="header-user">Welcome back,<span id="header-name">–</span></div>
+  </div>
+  <div class="app-content">
+    <div class="balance-section">
+      <div class="balance-label">Your Balance</div>
+      <div class="balance-amount" id="balance-display">0</div>
+      <div class="balance-unit">Cheezey Poof (CP)</div>
+      <div class="cred-badge" id="balance-username">@––––</div>
+    </div>
+    <div class="action-row">
+      <div class="action-btn" onclick="openSendModal()"><span class="ab-icon">🧀</span><span class="ab-label">Send</span></div>
+      <div class="action-btn" onclick="goWall()"><span class="ab-icon">📌</span><span class="ab-label">Wall</span></div>
+      <div class="action-btn" onclick="goDirectory()"><span class="ab-icon">👥</span><span class="ab-label">Accounts</span></div>
+      <div class="action-btn" onclick="goLedger()"><span class="ab-icon">📜</span><span class="ab-label">Tx Docs</span></div>
+      <div class="action-btn" onclick="refreshData()"><span class="ab-icon">🔄</span><span class="ab-label">Refresh</span></div>
+      <div class="action-btn" id="admin-nav-btn" style="display:none" onclick="goAdmin()"><span class="ab-icon">🔐</span><span class="ab-label">Admin</span></div>
+      <div class="action-btn" onclick="doLogout()"><span class="ab-icon">🚪</span><span class="ab-label">Sign Out</span></div>
+    </div>
+    <div class="section-title">📜 Recent Transactions</div>
+    <div class="tx-list" id="tx-list"><div class="tx-empty">No transactions yet.<br>Send your first Poofs! 🧀</div></div>
+  </div>
+</div>
+
+<!-- DIRECTORY -->
+<div class="screen" id="screen-directory">
+  <div class="dir-header">
+    <button class="btn btn-secondary btn-sm" onclick="goApp()" style="width:auto;margin-top:0">← Back</button>
+    <h1>👥 Accounts Directory</h1>
+  </div>
+  <div class="dir-search"><input type="text" id="dir-search" placeholder="🔍 Search by username…" oninput="filterDirectory()"></div>
+  <div class="dir-list" id="dir-list"><div class="tx-empty">Loading…</div></div>
+</div>
+
+<!-- WALL -->
+<div class="screen" id="screen-wall">
+  <div class="wall-header">
+    <button class="btn btn-secondary btn-sm" onclick="goApp()" style="width:auto;margin-top:0">← Back</button>
+    <h1>📌 Community Wall</h1>
+  </div>
+  <div class="wall-composer-wrap">
+    <div class="card" style="max-width:none;">
+      <label>Title (optional)</label>
+      <input id="post-title" maxlength="80" placeholder="Give it a title...">
+      <label>Message</label>
+      <textarea id="post-text" maxlength="500" placeholder="Say something cheesy..."></textarea>
+      <label>Image URL (optional)</label>
+      <input id="post-img" placeholder="https://...">
+      <button class="btn btn-primary" onclick="createPost()">Pin it 📌</button>
+    </div>
+  </div>
+  <div id="wallboard"><p class="tx-empty" style="color:#fff;">Loading wall...</p></div>
+</div>
+
+<!-- LEDGER -->
+<div class="screen" id="screen-ledger">
+  <div class="ledger-header">
+    <button class="btn btn-secondary btn-sm" onclick="goApp()" style="width:auto;margin-top:0">← Back</button>
+    <h1>📜 Transaction Docs</h1>
+  </div>
+  <div class="ledger-list" id="ledger-list"><div class="tx-empty">Loading…</div></div>
+</div>
+
+<!-- ADMIN -->
+<div class="screen" id="screen-admin">
+  <div id="admin-lock-overlay">
+    <div class="lock-icon">🔐</div>
+    <h2>Admin Access</h2>
+    <input type="password" id="admin-code-input" maxlength="8" placeholder="PIN">
+    <div class="error-msg" id="admin-code-error" style="max-width:300px"></div>
+    <button class="btn btn-purple btn-sm" onclick="checkAdminCode()" style="width:auto;margin-top:1rem">Unlock 🔓</button>
+    <button class="btn btn-secondary btn-sm" onclick="goApp()" style="width:auto;margin-top:.5rem">← Cancel</button>
+  </div>
+  <div id="admin-content" style="display:none">
+    <div class="admin-header">
+      <button class="btn btn-secondary btn-sm" onclick="goApp()" style="width:auto;margin-top:0">← Back</button>
+      <h1>🔐 Admin Panel</h1>
+      <button class="btn btn-secondary btn-sm" onclick="lockAdmin()" style="width:auto;margin-top:0">🔒 Lock</button>
+    </div>
+    <div class="admin-tabs">
+      <div class="admin-tab active" onclick="adminTab('dashboard')">📊 Dashboard</div>
+      <div class="admin-tab" onclick="adminTab('accounts')">👥 Accounts</div>
+      <div class="admin-tab" onclick="adminTab('wall')">📌 Wall Mod</div>
+      <div class="admin-tab" onclick="adminTab('danger')">⚠️ Danger Zone</div>
+    </div>
+    <div class="admin-panel active" id="apanel-dashboard"><div class="stat-grid" id="admin-stats-grid"></div></div>
+    <div class="admin-panel" id="apanel-accounts">
+      <div class="admin-card" style="padding:1rem;">
+        <input type="text" id="admin-search" placeholder="🔍 Search accounts…" oninput="adminSearchAccounts()" style="margin-top:0">
+      </div>
+      <div id="admin-accounts-list"></div>
+    </div>
+    <div class="admin-panel" id="apanel-wall">
+      <div id="admin-wall-list"></div>
+    </div>
+    <div class="admin-panel" id="apanel-danger">
+      <div class="admin-card" style="border:3px solid var(--red)">
+        <h3 style="color:var(--red)">⚠️ Danger Zone</h3>
+        <p style="color:#888;font-size:.85rem;margin-bottom:1rem">These actions are permanent.</p>
+        <button class="btn btn-red btn-sm" onclick="adminClearPosts()" style="width:100%;margin-bottom:.6rem">🗑 Clear All Wall Posts</button>
+        <button class="btn btn-red btn-sm" onclick="adminClearTx()" style="width:100%;margin-top:0">🗑 Clear All Transaction History</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SEND MODAL -->
+<div class="modal-overlay" id="send-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeSendModal()">✕</button>
+    <h2>🧀 Send Poofs</h2>
+    <label>Recipient Username</label>
+    <input type="text" id="send-to" oninput="lookupRecipient()" placeholder="username">
+    <div class="lookup-result" id="send-lookup"></div>
+    <label>Amount</label>
+    <input type="number" id="send-amount" min="0.01" step="0.01" placeholder="e.g. 10">
+    <div class="error-msg" id="send-error"></div>
+    <button class="btn btn-primary" onclick="doSend()">🧀 Send Poofs!</button>
+    <button class="btn btn-secondary" onclick="closeSendModal()">Cancel</button>
+  </div>
+</div>
+
+<div id="gift-overlay"></div>
+
+<script>
+/* ---------- shared backend (same Firebase DB used by the Cheezey Poof Bank batch tool) ---------- */
+const DB_URL = "https://kcmdv8-default-rtdb.firebaseio.com";
+const ADMIN_USERNAME = "Electro";
+const ADMIN_PIN = "1021";
+
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+async function sha256Hex(t){const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(t));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("");}
+async function dbGet(p){try{const r=await fetch(`${DB_URL}/${p}.json`);if(!r.ok)return null;const j=await r.json();return j===null?null:j;}catch(e){console.error(e);return null;}}
+async function dbPut(p,v){try{const r=await fetch(`${DB_URL}/${p}.json`,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(v)});return r.ok;}catch(e){console.error(e);return false;}}
+async function dbPost(p,v){try{const r=await fetch(`${DB_URL}/${p}.json`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(v)});if(!r.ok)return null;return await r.json();}catch(e){console.error(e);return null;}}
+async function dbDel(p){try{await fetch(`${DB_URL}/${p}.json`,{method:"DELETE"});}catch(e){console.error(e);}}
+
+const BAD_WORDS=["fuck","shit","bitch","asshole","bastard","cunt","dick","piss","slut","whore","nigger","faggot"];
+function censor(text){let out=text;for(const w of BAD_WORDS){out=out.replace(new RegExp(`\\b${w}\\b`,"gi"),m=>m[0]+"*".repeat(Math.max(m.length-1,1)));}return out;}
+
+let session=null, adminUnlocked=false, dirData=[], lookupTimer=null;
+
+/* ---------- floating cheese bg ---------- */
+(function(){
+  const canvas=document.getElementById('bg-canvas'),ctx=canvas.getContext('2d');
+  const bits=[],chars=['🧀','✨','🌟','💛','⭐'];
+  function resize(){canvas.width=innerWidth;canvas.height=innerHeight;}
+  resize();addEventListener('resize',resize);
+  for(let i=0;i<16;i++)bits.push({x:Math.random()*innerWidth,y:Math.random()*innerHeight,speed:.3+Math.random()*.5,char:chars[Math.floor(Math.random()*chars.length)],size:16+Math.random()*20,rot:Math.random()*6.28,rotSpeed:(Math.random()-.5)*.02,opacity:.04+Math.random()*.06});
+  function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    bits.forEach(b=>{b.y-=b.speed;b.rot+=b.rotSpeed;if(b.y<-40){b.y=canvas.height+40;b.x=Math.random()*canvas.width;}
+      ctx.save();ctx.globalAlpha=b.opacity;ctx.translate(b.x,b.y);ctx.rotate(b.rot);ctx.font=`${b.size}px serif`;ctx.textAlign='center';ctx.fillText(b.char,0,0);ctx.restore();});
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+/* ---------- utils ---------- */
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
+function showError(id,msg){const el=document.getElementById(id);el.textContent=msg;el.style.display='block';setTimeout(()=>el.style.display='none',5000);}
+function showSuccess(id,msg){const el=document.getElementById(id);el.textContent=msg;el.style.display='block';setTimeout(()=>el.style.display='none',5000);}
+function timeAgo(iso){const d=new Date(iso),diff=(Date.now()-d)/1000;if(diff<60)return 'just now';if(diff<3600)return `${Math.floor(diff/60)}m ago`;if(diff<86400)return `${Math.floor(diff/3600)}h ago`;return d.toLocaleDateString();}
+function avatarHTML(username,url,size){
+  if(url) return `<div class="avatar-circle" style="width:${size}px;height:${size}px;"><img src="${esc(url)}" onerror="this.parentElement.textContent='${esc((username||'?')[0].toUpperCase())}'"></div>`;
+  return `<div class="avatar-circle" style="width:${size}px;height:${size}px;">${esc((username||'?').charAt(0).toUpperCase())}</div>`;
+}
+
+/* ---------- admin seed ---------- */
+async function ensureAdminSeed(){
+  const existing=await dbGet(`users/${ADMIN_USERNAME}`);
+  if(!existing){
+    const hash=await sha256Hex(ADMIN_PIN);
+    await dbPut(`users/${ADMIN_USERNAME}`,{passwordHash:hash,created:new Date().toISOString()});
+    await dbPut(`roles/${ADMIN_USERNAME}`,"admin");
+    await dbPut(`balances/${ADMIN_USERNAME}`,0);
+  } else {
+    const role=await dbGet(`roles/${ADMIN_USERNAME}`);
+    if(role!=="admin") await dbPut(`roles/${ADMIN_USERNAME}`,"admin");
+  }
+}
+
+/* ---------- login tabs ---------- */
+function switchLoginTab(tab){
+  document.getElementById('tab-signin').classList.toggle('active',tab==='signin');
+  document.getElementById('tab-register').classList.toggle('active',tab==='register');
+  document.getElementById('panel-signin').style.display=tab==='signin'?'':'none';
+  document.getElementById('panel-register').style.display=tab==='register'?'':'none';
+}
+
+/* ---------- register / login ---------- */
+async function doRegister(){
+  const uname=document.getElementById('reg-username').value.trim();
+  const pass=document.getElementById('reg-password').value;
+  const pass2=document.getElementById('reg-password2').value;
+  const avatar=document.getElementById('reg-avatar').value.trim();
+  if(!/^[A-Za-z0-9_-]+$/.test(uname)) return showError('reg-error','Username: letters, numbers, _ and - only.');
+  if(!pass) return showError('reg-error','Enter a password.');
+  if(pass!==pass2) return showError('reg-error',"Passwords don't match.");
+  const existing=await dbGet(`users/${uname}`);
+  if(existing) return showError('reg-error','Username already taken.');
+  const hash=await sha256Hex(pass);
+  await dbPut(`users/${uname}`,{passwordHash:hash,created:new Date().toISOString()});
+  await dbPut(`balances/${uname}`,0.5);
+  if(avatar && /^https?:\/\//i.test(avatar)) await dbPut(`profiles/${uname}/avatar`,avatar);
+  showSuccess('reg-success','✅ Account created! Signing you in...');
+  setTimeout(()=>loginSuccess(uname),900);
+}
+
+async function doLogin(){
+  const uname=document.getElementById('login-username').value.trim();
+  const pass=document.getElementById('login-password').value;
+  if(!uname||!pass) return showError('login-error','Enter a username and password.');
+  const existing=await dbGet(`users/${uname}`);
+  if(!existing) return showError('login-error','No such user. Try Make Account.');
+  const hash=await sha256Hex(pass);
+  if(existing.passwordHash!==hash) return showError('login-error','Wrong password.');
+  loginSuccess(uname);
+}
+
+async function loginSuccess(uname){
+  session={username:uname};
+  showScreen('screen-app');
+  await loadApp();
+}
+
+function doLogout(){session=null;adminUnlocked=false;showScreen('screen-login');}
+function goApp(){showScreen('screen-app');refreshData();}
+
+/* ---------- app ---------- */
+async function loadApp(){
+  if(!session) return;
+  document.getElementById('header-name').textContent='@'+session.username;
+  document.getElementById('balance-username').textContent='@'+session.username;
+  const role=await dbGet(`roles/${session.username}`);
+  session.isAdmin = role==='admin';
+  document.getElementById('admin-nav-btn').style.display = session.isAdmin ? '' : 'none';
+  await refreshData();
+}
+
+async function refreshData(){
+  if(!session) return;
+  const bal=(await dbGet(`balances/${session.username}`))??0;
+  session.balance=bal;
+  document.getElementById('balance-display').textContent=Number(bal).toLocaleString();
+  const txData=await dbGet('transactions');
+  const all = txData ? Object.values(txData) : [];
+  const mine = all.filter(t=>t.from===session.username||t.to===session.username)
+                   .sort((a,b)=>(b.time||'').localeCompare(a.time||'')).slice(0,20);
+  renderTxList(mine);
+}
+
+function renderTxList(txs){
+  const el=document.getElementById('tx-list');
+  if(!txs.length){el.innerHTML='<div class="tx-empty">No transactions yet.<br>Send your first Poofs! 🧀</div>';return;}
+  el.innerHTML=txs.map(tx=>{
+    const received = tx.to===session.username;
+    const name = received ? `From: ${esc(tx.from)}` : `To: ${esc(tx.to)}`;
+    return `<div class="tx-item ${received?'received':'sent'}">
+      <div class="tx-icon">${received?'🧀':'📤'}</div>
+      <div class="tx-info"><div class="tx-name">${name}</div><div class="tx-date">${timeAgo(tx.time)}</div></div>
+      <div class="tx-amount ${received?'pos':'neg'}">${received?'+':'-'}${Number(tx.amount).toLocaleString()} CP</div>
+    </div>`;
+  }).join('');
+}
+
+/* ---------- directory ---------- */
+async function goDirectory(){
+  showScreen('screen-directory');
+  document.getElementById('dir-search').value='';
+  document.getElementById('dir-list').innerHTML='<div class="tx-empty">Loading…</div>';
+  const users=await dbGet('users');
+  dirData = users ? Object.keys(users) : [];
+  renderDirectory(dirData);
+}
+async function renderDirectory(names){
+  const el=document.getElementById('dir-list');
+  if(!names.length){el.innerHTML='<div class="tx-empty">No accounts found.</div>';return;}
+  const rows=await Promise.all(names.slice(0,100).map(async n=>{
+    const bal=(await dbGet(`balances/${n}`))??0;
+    const role=await dbGet(`roles/${n}`);
+    const avatar=await dbGet(`profiles/${n}/avatar`);
+    return `<div class="dir-item">
+      ${avatarHTML(n,avatar,44)}
+      <div style="flex:1;min-width:0">
+        <div class="dir-name">${role==='admin'?'👑 ':''}${esc(n)} ${role==='admin'?'<span class="dir-badge admin-badge">Admin</span>':''}</div>
+        <div class="dir-id">${Number(bal).toLocaleString()} CP</div>
+      </div>
+    </div>`;
+  }));
+  el.innerHTML=rows.join('');
+}
+function filterDirectory(){
+  const q=document.getElementById('dir-search').value.toLowerCase();
+  renderDirectory(q ? dirData.filter(n=>n.toLowerCase().includes(q)) : dirData);
+}
+
+/* ---------- wall ---------- */
+function goWall(){showScreen('screen-wall');loadWall();}
+
+async function createPost(){
+  if(!session) return;
+  const titleRaw=document.getElementById('post-title').value.trim();
+  const textRaw=document.getElementById('post-text').value.trim();
+  const imgRaw=document.getElementById('post-img').value.trim();
+  if(!titleRaw && !textRaw && !imgRaw) return;
+  let imageUrl='';
+  if(imgRaw && /^https?:\/\//i.test(imgRaw)) imageUrl=imgRaw;
+  const avatar=(await dbGet(`profiles/${session.username}/avatar`))||'';
+  await dbPost('posts',{author:session.username,authorAvatar:avatar,title:censor(titleRaw).slice(0,80),text:censor(textRaw).slice(0,500),imageUrl,time:new Date().toISOString(),likes:0});
+  document.getElementById('post-title').value='';
+  document.getElementById('post-text').value='';
+  document.getElementById('post-img').value='';
+  loadWall();
+}
+
+let likedPosts = JSON.parse(localStorage.getItem('cps_liked')||'[]');
+
+async function loadWall(){
+  const board=document.getElementById('wallboard');
+  const data=await dbGet('posts');
+  if(!data){board.innerHTML='<p class="tx-empty" style="color:#fff;">Nothing pinned yet. Be the first!</p>';return;}
+  const entries=Object.entries(data).sort((a,b)=>(b[1].time||'').localeCompare(a[1].time||''));
+  board.innerHTML=entries.map(([id,p])=>{
+    const liked=likedPosts.includes(id);
+    const canRemove=session && (session.isAdmin || session.username===p.author);
+    return `<div class="note">
+      <div class="pin"></div>
+      <div class="meta">${avatarHTML(p.author,p.authorAvatar,20)}<span>${esc(p.author)}</span><span>· ${esc(new Date(p.time).toLocaleDateString())}</span></div>
+      ${p.title?`<h3>${esc(p.title)}</h3>`:''}
+      ${p.imageUrl?`<img class="post-img" src="${esc(p.imageUrl)}" onerror="this.style.display='none'">`:''}
+      ${p.text?`<p class="body">${esc(p.text)}</p>`:''}
+      <div class="footer">
+        <button class="like-btn ${liked?'liked':''}" onclick="toggleLike('${id}')" ${liked?'disabled':''}>🧡 ${p.likes||0}</button>
+        ${canRemove?`<button class="remove-btn" onclick="removePost('${id}')">remove</button>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function toggleLike(id){
+  if(likedPosts.includes(id)) return;
+  const cur=await dbGet(`posts/${id}/likes`)||0;
+  await dbPut(`posts/${id}/likes`,cur+1);
+  likedPosts.push(id);
+  localStorage.setItem('cps_liked',JSON.stringify(likedPosts));
+  loadWall();
+}
+async function removePost(id){
+  const post=await dbGet(`posts/${id}`);
+  if(!post) return;
+  if(!(session.isAdmin || session.username===post.author)) return;
+  if(!confirm('Remove this post?')) return;
+  await dbDel(`posts/${id}`);
+  loadWall();
+}
+
+/* ---------- ledger ---------- */
+function goLedger(){showScreen('screen-ledger');loadLedger();}
+async function loadLedger(){
+  const el=document.getElementById('ledger-list');
+  el.innerHTML='<div class="tx-empty">Loading…</div>';
+  const data=await dbGet('transactions');
+  if(!data){el.innerHTML='<div class="tx-empty">No transactions yet.</div>';return;}
+  const rows=Object.values(data).sort((a,b)=>(b.time||'').localeCompare(a.time||''));
+  el.innerHTML=rows.map(tx=>`
+    <div class="tx-item received">
+      <div class="tx-icon">💸</div>
+      <div class="tx-info"><div class="tx-name">${esc(tx.from)} → ${esc(tx.to)}</div><div class="tx-date">${timeAgo(tx.time)}</div></div>
+      <div class="tx-amount pos">${Number(tx.amount).toLocaleString()} CP</div>
+    </div>`).join('');
+}
+
+/* ---------- send ---------- */
+function openSendModal(){
+  document.getElementById('send-to').value='';
+  document.getElementById('send-amount').value='';
+  document.getElementById('send-lookup').style.display='none';
+  document.getElementById('send-error').style.display='none';
+  document.getElementById('send-modal').classList.add('active');
+}
+function closeSendModal(){document.getElementById('send-modal').classList.remove('active');}
+document.getElementById('send-modal').addEventListener('click',function(e){if(e.target===this)closeSendModal();});
+
+async function lookupRecipient(){
+  clearTimeout(lookupTimer);
+  const name=document.getElementById('send-to').value.trim();
+  const el=document.getElementById('send-lookup');
+  if(!name){el.style.display='none';return;}
+  lookupTimer=setTimeout(async()=>{
+    const exists=await dbGet(`users/${name}`);
+    el.textContent = exists ? `✅ ${name} found` : '❌ User not found';
+    el.style.display='block';
+  },350);
+}
+
+async function doSend(){
+  const to=document.getElementById('send-to').value.trim();
+  const amt=parseFloat(document.getElementById('send-amount').value);
+  if(!to) return showError('send-error','Enter a recipient.');
+  if(to===session.username) return showError('send-error',"You can't send to yourself.");
+  if(!amt||amt<=0) return showError('send-error','Enter a positive amount.');
+  const targetExists=await dbGet(`users/${to}`);
+  if(!targetExists) return showError('send-error',`No such user: ${to}`);
+  const myBal=(await dbGet(`balances/${session.username}`))??0;
+  if(myBal<amt) return showError('send-error',`Insufficient balance. You have ${myBal} CP.`);
+  const newMine=Math.round((myBal-amt)*100)/100;
+  const theirBal=(await dbGet(`balances/${to}`))??0;
+  const newTheirs=Math.round((theirBal+amt)*100)/100;
+  await dbPut(`balances/${session.username}`,newMine);
+  await dbPut(`balances/${to}`,newTheirs);
+  await dbPost('transactions',{from:session.username,to,amount:amt,time:new Date().toISOString()});
+  closeSendModal();
+  playGiftSendAnimation();
+  setTimeout(()=>refreshData(),1600);
+}
+
+function playGiftSendAnimation(){
+  const overlay=document.getElementById('gift-overlay');
+  overlay.innerHTML='';overlay.classList.add('active');
+  const box=document.createElement('div');
+  box.className='gift-box';box.textContent='🧀';
+  box.style.left=(innerWidth/2-28)+'px';box.style.bottom='80px';
+  overlay.appendChild(box);
+  const sparkles=['✨','⭐','💛','🌟','🎊','💫'];
+  for(let i=0;i<10;i++){
+    const s=document.createElement('div');s.className='gift-sparkle';
+    s.textContent=sparkles[Math.floor(Math.random()*sparkles.length)];
+    const angle=(6.28/10)*i, dist=60+Math.random()*80;
+    s.style.setProperty('--dx',Math.cos(angle)*dist+'px');
+    s.style.setProperty('--dy',Math.sin(angle)*dist+'px');
+    s.style.left=(innerWidth/2-10)+'px';s.style.bottom='120px';
+    s.style.animationDelay=(Math.random()*.3)+'s';
+    overlay.appendChild(s);
+  }
+  setTimeout(()=>{const p=document.createElement('div');p.className='gift-msg-popup';p.textContent='🧀 Poofs sent! ✨';document.body.appendChild(p);setTimeout(()=>p.remove(),2400);},300);
+  setTimeout(()=>{overlay.classList.remove('active');overlay.innerHTML='';},2600);
+}
+
+/* ---------- admin ---------- */
+function goAdmin(){showScreen('screen-admin');adminUnlocked?showAdminContent():showAdminLock();}
+function showAdminLock(){document.getElementById('admin-lock-overlay').style.display='flex';document.getElementById('admin-content').style.display='none';document.getElementById('admin-code-input').value='';document.getElementById('admin-code-error').style.display='none';}
+function showAdminContent(){document.getElementById('admin-lock-overlay').style.display='none';document.getElementById('admin-content').style.display='block';loadAdminDashboard();}
+function lockAdmin(){adminUnlocked=false;showAdminLock();}
+function checkAdminCode(){
+  const code=document.getElementById('admin-code-input').value.trim();
+  if(code===ADMIN_PIN){adminUnlocked=true;showAdminContent();}
+  else{showError('admin-code-error','❌ Incorrect PIN.');document.getElementById('admin-code-input').value='';}
+}
+document.getElementById('admin-code-input').addEventListener('keydown',e=>{if(e.key==='Enter')checkAdminCode();});
+
+const ADMIN_TABS=['dashboard','accounts','wall','danger'];
+function adminTab(tab){
+  document.querySelectorAll('.admin-tab').forEach((t,i)=>t.classList.toggle('active',ADMIN_TABS[i]===tab));
+  document.querySelectorAll('.admin-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('apanel-'+tab).classList.add('active');
+  if(tab==='dashboard') loadAdminDashboard();
+  if(tab==='accounts') loadAdminAccounts();
+  if(tab==='wall') loadAdminWall();
+}
+
+async function loadAdminDashboard(){
+  const users=await dbGet('users');
+  const balancesObj=await dbGet('balances');
+  const posts=await dbGet('posts');
+  const txs=await dbGet('transactions');
+  const names=users?Object.keys(users):[];
+  const totalCP=balancesObj?Object.values(balancesObj).reduce((a,b)=>a+(Number(b)||0),0):0;
+  document.getElementById('admin-stats-grid').innerHTML=`
+    <div class="stat-box"><div class="sv">${names.length}</div><div class="sl">Total Accounts</div></div>
+    <div class="stat-box"><div class="sv">${Number(totalCP).toLocaleString()}</div><div class="sl">CP In Circulation</div></div>
+    <div class="stat-box"><div class="sv">${txs?Object.keys(txs).length:0}</div><div class="sl">All-Time TXs</div></div>
+    <div class="stat-box"><div class="sv">${posts?Object.keys(posts).length:0}</div><div class="sl">Wall Posts</div></div>
+  `;
+}
+
+async function loadAdminAccounts(){
+  const users=await dbGet('users');
+  const names=users?Object.keys(users):[];
+  renderAdminAccounts(names);
+}
+async function renderAdminAccounts(names){
+  const rows=await Promise.all(names.map(async n=>{
+    const bal=(await dbGet(`balances/${n}`))??0;
+    const role=await dbGet(`roles/${n}`);
+    return `<div class="account-row">
+      <div class="ar-info"><div class="ar-name">${role==='admin'?'👑 ':''}${esc(n)}</div></div>
+      <div class="ar-bal">${Number(bal).toLocaleString()} CP</div>
+      <div class="ar-actions">
+        <button class="btn btn-green btn-xs" onclick="adminAdjustBalance('${n}',5)">+5</button>
+        <button class="btn btn-red btn-xs" onclick="adminAdjustBalance('${n}',-5)">-5</button>
+      </div>
+    </div>`;
+  }));
+  document.getElementById('admin-accounts-list').innerHTML=rows.join('');
+}
+async function adminAdjustBalance(name,delta){
+  const cur=(await dbGet(`balances/${name}`))??0;
+  const next=Math.max(0,Math.round((cur+delta)*100)/100);
+  await dbPut(`balances/${name}`,next);
+  loadAdminAccounts();
+}
+async function adminSearchAccounts(){
+  const q=document.getElementById('admin-search').value.trim().toLowerCase();
+  const users=await dbGet('users');
+  const names=users?Object.keys(users):[];
+  renderAdminAccounts(q?names.filter(n=>n.toLowerCase().includes(q)):names);
+}
+
+async function loadAdminWall(){
+  const data=await dbGet('posts');
+  const el=document.getElementById('admin-wall-list');
+  if(!data){el.innerHTML='<div class="tx-empty">No posts.</div>';return;}
+  const entries=Object.entries(data).sort((a,b)=>(b[1].time||'').localeCompare(a[1].time||''));
+  el.innerHTML=entries.map(([id,p])=>`
+    <div class="account-row">
+      <div class="ar-info"><div class="ar-name">${esc(p.author)}${p.title?': '+esc(p.title):''}</div><div class="ar-id">${esc((p.text||'').slice(0,60))}</div></div>
+      <button class="btn btn-red btn-xs" onclick="adminRemovePost('${id}')">Remove</button>
+    </div>`).join('');
+}
+async function adminRemovePost(id){
+  if(!confirm('Remove this post?')) return;
+  await dbDel(`posts/${id}`);
+  loadAdminWall();
+}
+
+async function adminClearPosts(){
+  if(!confirm('Delete ALL wall posts? This cannot be undone.')) return;
+  await dbDel('posts');
+  loadAdminWall();
+}
+async function adminClearTx(){
+  if(!confirm('Delete ALL transaction history? This cannot be undone.')) return;
+  await dbDel('transactions');
+}
+
+/* ---------- boot ---------- */
+ensureAdminSeed();
+</script>
+</body>
+</html>

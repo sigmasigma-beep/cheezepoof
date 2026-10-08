@@ -149,6 +149,33 @@
   .account-row .ar-bal{font-family:'Fredoka One',cursive;color:var(--green);font-size:.98rem;white-space:nowrap;}
   .account-row .ar-actions{display:flex;gap:.3rem;}
 
+  /* Wii-style free-roam wall */
+  .wall-hint{margin:0 1.5rem .8rem;background:#fff3d0;border:2px dashed var(--cheese);border-radius:12px;padding:.6rem 1rem;font-weight:800;color:var(--accent);font-size:.85rem;text-align:center;display:none;}
+  .wall-hint.show{display:block;}
+  #wall-viewport{position:relative;overflow:hidden;width:calc(100% - 3rem);height:62vh;margin:0 1.5rem 1.6rem;border-radius:18px;
+    background:
+      repeating-linear-gradient(0deg, rgba(255,255,255,.05) 0 1px, transparent 1px 44px),
+      repeating-linear-gradient(90deg, rgba(255,255,255,.05) 0 1px, transparent 1px 44px),
+      linear-gradient(#7a4a23,#5e3817);
+    box-shadow: inset 0 0 40px rgba(0,0,0,.45);
+    cursor:grab;
+  }
+  #wall-viewport.placing{cursor:crosshair;}
+  #board-inner{position:absolute;top:0;left:0;width:2400px;height:1600px;}
+  #board-inner .note{position:absolute;width:190px;margin:0;}
+  .board-cam-hud{position:absolute;bottom:10px;right:12px;background:rgba(0,0,0,.45);color:#ffd27f;font-size:.7rem;font-weight:800;padding:4px 10px;border-radius:999px;pointer-events:none;}
+
+  /* Mailbox */
+  .mail-tabs{display:flex;gap:.5rem;margin:0 1.5rem 1rem;}
+  .mail-item{background:var(--card);border-radius:14px;padding:.9rem 1.1rem;margin-bottom:.6rem;border-left:5px solid var(--blue);box-shadow:0 2px 8px rgba(0,0,0,.08);}
+  .mail-item.unread{border-left-color:var(--orange);background:#fff6e6;}
+  .mail-item .mail-from{font-weight:800;color:var(--dark);font-size:.92rem;}
+  .mail-item .mail-time{font-size:.72rem;color:#aaa;margin-bottom:.4rem;}
+  .mail-item .mail-text{font-size:.9rem;color:#3a2412;white-space:pre-wrap;word-break:break-word;}
+  .mail-item .mail-actions{display:flex;gap:.5rem;margin-top:.5rem;}
+  .mail-badge{position:absolute;top:-6px;right:6px;background:var(--red);color:#fff;font-size:.65rem;font-weight:900;border-radius:999px;padding:1px 6px;display:none;}
+  .action-btn{position:relative;}
+
   #gift-overlay{display:none;position:fixed;inset:0;z-index:1000;pointer-events:none;}
   #gift-overlay.active{display:block;}
   .gift-box{position:absolute;font-size:3.6rem;animation:giftFly 2.3s ease-in forwards;filter:drop-shadow(0 8px 20px rgba(255,200,0,.8));}
@@ -222,6 +249,7 @@
     <div class="action-row">
       <div class="action-btn" onclick="openSendModal()"><span class="ab-icon">🧀</span><span class="ab-label">Send</span></div>
       <div class="action-btn" onclick="goWall()"><span class="ab-icon">📌</span><span class="ab-label">Wall</span></div>
+      <div class="action-btn" onclick="goMail()"><span class="mail-badge" id="mail-badge">0</span><span class="ab-icon">📬</span><span class="ab-label">Mail</span></div>
       <div class="action-btn" onclick="goDirectory()"><span class="ab-icon">👥</span><span class="ab-label">Accounts</span></div>
       <div class="action-btn" onclick="goLedger()"><span class="ab-icon">📜</span><span class="ab-label">Tx Docs</span></div>
       <div class="action-btn" onclick="refreshData()"><span class="ab-icon">🔄</span><span class="ab-label">Refresh</span></div>
@@ -250,17 +278,22 @@
     <h1>📌 Community Wall</h1>
   </div>
   <div class="wall-composer-wrap">
-    <div class="card" style="max-width:none;">
+    <div class="card" style="max-width:none;" id="wall-composer-card">
       <label>Title (optional)</label>
       <input id="post-title" maxlength="80" placeholder="Give it a title...">
       <label>Message</label>
       <textarea id="post-text" maxlength="500" placeholder="Say something cheesy..."></textarea>
       <label>Image URL (optional)</label>
       <input id="post-img" placeholder="https://...">
-      <button class="btn btn-primary" onclick="createPost()">Pin it 📌</button>
+      <button class="btn btn-primary" id="wall-pin-btn" onclick="startPlacement()">Pin it 📌</button>
+      <button class="btn btn-secondary" id="wall-cancel-btn" style="display:none;" onclick="cancelPlacement()">Cancel placing</button>
     </div>
   </div>
-  <div id="wallboard"><p class="tx-empty" style="color:#fff;">Loading wall...</p></div>
+  <div class="wall-hint" id="wall-hint">Use W A S D to move around the board. Click an empty spot to pin your post!</div>
+  <div id="wall-viewport">
+    <div id="board-inner"><p class="tx-empty" style="color:#fff;position:absolute;top:20px;left:20px;">Loading wall...</p></div>
+    <div class="board-cam-hud">W A S D to move</div>
+  </div>
 </div>
 
 <!-- LEDGER -->
@@ -270,6 +303,30 @@
     <h1>📜 Transaction Docs</h1>
   </div>
   <div class="ledger-list" id="ledger-list"><div class="tx-empty">Loading…</div></div>
+</div>
+
+<!-- MAILBOX -->
+<div class="screen" id="screen-mail">
+  <div class="dir-header">
+    <button class="btn btn-secondary btn-sm" onclick="goApp()" style="width:auto;margin-top:0">← Back</button>
+    <h1>📬 Mailbox</h1>
+  </div>
+  <div class="wall-composer-wrap">
+    <div class="card" style="max-width:none;">
+      <h2 style="margin-bottom:1rem;">New Message</h2>
+      <label>To (username)</label>
+      <input id="mail-to" placeholder="username">
+      <label>Message</label>
+      <textarea id="mail-text" maxlength="500" placeholder="Say hi..."></textarea>
+      <div class="error-msg" id="mail-error"></div>
+      <button class="btn btn-primary" onclick="doSendMail()">Send ✉️</button>
+    </div>
+  </div>
+  <div class="mail-tabs">
+    <div class="login-tab active" id="mail-tab-inbox" onclick="switchMailTab('inbox')" style="max-width:160px;">Inbox</div>
+    <div class="login-tab" id="mail-tab-sent" onclick="switchMailTab('sent')" style="max-width:160px;">Sent</div>
+  </div>
+  <div class="dir-list" id="mail-list"><div class="tx-empty">Loading…</div></div>
 </div>
 
 <!-- ADMIN -->
@@ -445,8 +502,9 @@ async function loadApp(){
   document.getElementById('balance-username').textContent='@'+session.username;
   const role=await dbGet(`roles/${session.username}`);
   session.isAdmin = role==='admin';
-  document.getElementById('admin-nav-btn').style.display = session.isAdmin ? '' : 'none';
+  document.getElementById('admin-nav-btn').style.display = (session.username===ADMIN_USERNAME) ? '' : 'none';
   await refreshData();
+  await updateMailBadge();
 }
 
 async function refreshData(){
@@ -506,36 +564,126 @@ function filterDirectory(){
   renderDirectory(q ? dirData.filter(n=>n.toLowerCase().includes(q)) : dirData);
 }
 
-/* ---------- wall ---------- */
+/* ---------- wall (Wii-style free-roam board) ---------- */
+const BOARD_W=2400, BOARD_H=1600, NOTE_W=190, NOTE_H=175, NOTE_PAD=16;
+let panX=0, panY=0, keys={};
+let wallPosts=[]; // [[id,post],...] currently loaded, each post has x,y
+let placementMode=false, pendingPost=null;
+let likedPosts = JSON.parse(localStorage.getItem('cps_liked')||'[]');
+
 function goWall(){showScreen('screen-wall');loadWall();}
 
-async function createPost(){
+window.addEventListener('keydown',e=>{
+  const k=e.key.toLowerCase();
+  if(!['w','a','s','d'].includes(k)) return;
+  const tag=document.activeElement && document.activeElement.tagName;
+  if(tag==='INPUT'||tag==='TEXTAREA') return;
+  keys[k]=true;
+});
+window.addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false;});
+
+(function panLoop(){
+  const wallScreen=document.getElementById('screen-wall');
+  if(wallScreen && wallScreen.classList.contains('active')){
+    const speed=14;
+    if(keys['w']) panY-=speed;
+    if(keys['s']) panY+=speed;
+    if(keys['a']) panX-=speed;
+    if(keys['d']) panX+=speed;
+    const vp=document.getElementById('wall-viewport');
+    if(vp){
+      const vw=vp.clientWidth||1, vh=vp.clientHeight||1;
+      panX=Math.max(0,Math.min(panX,Math.max(0,BOARD_W-vw)));
+      panY=Math.max(0,Math.min(panY,Math.max(0,BOARD_H-vh)));
+      const bi=document.getElementById('board-inner');
+      if(bi) bi.style.transform=`translate(${-panX}px,${-panY}px)`;
+    }
+  }
+  requestAnimationFrame(panLoop);
+})();
+
+function overlapsExisting(x,y){
+  for(const [,p] of wallPosts){
+    const ex=p._x, ey=p._y;
+    if(x < ex+NOTE_W+NOTE_PAD && x+NOTE_W+NOTE_PAD > ex && y < ey+NOTE_H+NOTE_PAD && y+NOTE_H+NOTE_PAD > ey) return true;
+  }
+  return false;
+}
+
+function startPlacement(){
   if(!session) return;
   const titleRaw=document.getElementById('post-title').value.trim();
   const textRaw=document.getElementById('post-text').value.trim();
   const imgRaw=document.getElementById('post-img').value.trim();
-  if(!titleRaw && !textRaw && !imgRaw) return;
+  if(!titleRaw && !textRaw && !imgRaw){ return; }
   let imageUrl='';
   if(imgRaw && /^https?:\/\//i.test(imgRaw)) imageUrl=imgRaw;
+  pendingPost={title:censor(titleRaw).slice(0,80),text:censor(textRaw).slice(0,500),imageUrl};
+  placementMode=true;
+  document.getElementById('wall-pin-btn').style.display='none';
+  document.getElementById('wall-cancel-btn').style.display='';
+  document.getElementById('wall-composer-card').style.opacity='.5';
+  document.getElementById('wall-composer-card').style.pointerEvents='none';
+  const hint=document.getElementById('wall-hint');
+  hint.textContent='Click an empty spot on the board to pin your post (WASD still moves the camera).';
+  hint.classList.add('show');
+  document.getElementById('wall-viewport').classList.add('placing');
+}
+
+function cancelPlacement(){
+  placementMode=false; pendingPost=null;
+  document.getElementById('wall-pin-btn').style.display='';
+  document.getElementById('wall-cancel-btn').style.display='none';
+  document.getElementById('wall-composer-card').style.opacity='';
+  document.getElementById('wall-composer-card').style.pointerEvents='';
+  document.getElementById('wall-hint').classList.remove('show');
+  document.getElementById('wall-viewport').classList.remove('placing');
+}
+
+async function handleBoardClick(e){
+  if(!placementMode || !pendingPost) return;
+  const bi=document.getElementById('board-inner');
+  const rect=bi.getBoundingClientRect();
+  let x=Math.round(e.clientX-rect.left-NOTE_W/2);
+  let y=Math.round(e.clientY-rect.top-NOTE_H/2);
+  x=Math.max(10,Math.min(x,BOARD_W-NOTE_W-10));
+  y=Math.max(10,Math.min(y,BOARD_H-NOTE_H-10));
+  if(overlapsExisting(x,y)){
+    const hint=document.getElementById('wall-hint');
+    hint.textContent="That spot overlaps another post — try a different spot!";
+    return;
+  }
   const avatar=(await dbGet(`profiles/${session.username}/avatar`))||'';
-  await dbPost('posts',{author:session.username,authorAvatar:avatar,title:censor(titleRaw).slice(0,80),text:censor(textRaw).slice(0,500),imageUrl,time:new Date().toISOString(),likes:0});
+  await dbPost('posts',{author:session.username,authorAvatar:avatar,title:pendingPost.title,text:pendingPost.text,imageUrl:pendingPost.imageUrl,time:new Date().toISOString(),likes:0,x,y});
   document.getElementById('post-title').value='';
   document.getElementById('post-text').value='';
   document.getElementById('post-img').value='';
+  cancelPlacement();
   loadWall();
 }
+document.getElementById('board-inner').addEventListener('click', handleBoardClick);
 
-let likedPosts = JSON.parse(localStorage.getItem('cps_liked')||'[]');
+function fallbackPos(index){
+  const perRow=Math.floor((BOARD_W-40)/(NOTE_W+NOTE_PAD));
+  const col=index%perRow, row=Math.floor(index/perRow);
+  return {x:20+col*(NOTE_W+NOTE_PAD), y:20+row*(NOTE_H+NOTE_PAD)};
+}
 
 async function loadWall(){
-  const board=document.getElementById('wallboard');
+  const board=document.getElementById('board-inner');
   const data=await dbGet('posts');
-  if(!data){board.innerHTML='<p class="tx-empty" style="color:#fff;">Nothing pinned yet. Be the first!</p>';return;}
-  const entries=Object.entries(data).sort((a,b)=>(b[1].time||'').localeCompare(a[1].time||''));
+  if(!data){board.innerHTML='<p class="tx-empty" style="color:#fff;position:absolute;top:20px;left:20px;">Nothing pinned yet. Be the first!</p>';wallPosts=[];return;}
+  const entries=Object.entries(data).sort((a,b)=>(a[1].time||'').localeCompare(b[1].time||''));
+  entries.forEach(([id,p],i)=>{
+    if(typeof p.x!=='number' || typeof p.y!=='number'){
+      const fp=fallbackPos(i); p._x=fp.x; p._y=fp.y;
+    } else { p._x=p.x; p._y=p.y; }
+  });
+  wallPosts=entries;
   board.innerHTML=entries.map(([id,p])=>{
     const liked=likedPosts.includes(id);
     const canRemove=session && (session.isAdmin || session.username===p.author);
-    return `<div class="note">
+    return `<div class="note" style="left:${p._x}px;top:${p._y}px;">
       <div class="pin"></div>
       <div class="meta">${avatarHTML(p.author,p.authorAvatar,20)}<span>${esc(p.author)}</span><span>· ${esc(new Date(p.time).toLocaleDateString())}</span></div>
       ${p.title?`<h3>${esc(p.title)}</h3>`:''}
@@ -648,6 +796,65 @@ function playGiftSendAnimation(){
   setTimeout(()=>{overlay.classList.remove('active');overlay.innerHTML='';},2600);
 }
 
+/* ---------- mailbox ---------- */
+let mailTab='inbox';
+function goMail(){showScreen('screen-mail');switchMailTab('inbox');}
+function switchMailTab(tab){
+  mailTab=tab;
+  document.getElementById('mail-tab-inbox').classList.toggle('active',tab==='inbox');
+  document.getElementById('mail-tab-sent').classList.toggle('active',tab==='sent');
+  loadMailbox();
+}
+async function doSendMail(){
+  const to=document.getElementById('mail-to').value.trim();
+  const text=document.getElementById('mail-text').value.trim();
+  if(!to) return showError('mail-error','Enter a recipient username.');
+  if(to===session.username) return showError('mail-error',"You can't mail yourself.");
+  if(!text) return showError('mail-error','Write a message.');
+  const exists=await dbGet(`users/${to}`);
+  if(!exists) return showError('mail-error',`No such user: ${to}`);
+  await dbPost('mail',{from:session.username,to,text:censor(text).slice(0,500),time:new Date().toISOString(),read:false});
+  document.getElementById('mail-to').value='';
+  document.getElementById('mail-text').value='';
+  loadMailbox();
+}
+async function loadMailbox(){
+  const el=document.getElementById('mail-list');
+  el.innerHTML='<div class="tx-empty">Loading…</div>';
+  const data=await dbGet('mail');
+  if(!data){el.innerHTML='<div class="tx-empty">Nothing here yet.</div>';return;}
+  const entries=Object.entries(data).filter(([id,m])=> mailTab==='inbox' ? m.to===session.username : m.from===session.username)
+    .sort((a,b)=>(b[1].time||'').localeCompare(a[1].time||''));
+  if(!entries.length){el.innerHTML='<div class="tx-empty">Nothing here yet.</div>';return;}
+  el.innerHTML=entries.map(([id,m])=>`
+    <div class="mail-item ${mailTab==='inbox' && !m.read ? 'unread':''}">
+      <div class="mail-from">${mailTab==='inbox' ? 'From: '+esc(m.from) : 'To: '+esc(m.to)}</div>
+      <div class="mail-time">${timeAgo(m.time)}</div>
+      <div class="mail-text">${esc(m.text)}</div>
+      <div class="mail-actions">
+        ${mailTab==='inbox' ? `<button class="btn btn-secondary btn-xs" onclick="document.getElementById('mail-to').value='${esc(m.from)}';document.getElementById('mail-text').focus();">Reply</button>` : ''}
+        <button class="btn btn-red btn-xs" onclick="deleteMail('${id}')">Delete</button>
+      </div>
+    </div>`).join('');
+  if(mailTab==='inbox'){
+    entries.forEach(([id,m])=>{ if(!m.read) dbPut(`mail/${id}/read`,true); });
+    updateMailBadge();
+  }
+}
+async function deleteMail(id){
+  await dbDel(`mail/${id}`);
+  loadMailbox();
+}
+async function updateMailBadge(){
+  if(!session) return;
+  const data=await dbGet('mail');
+  const badge=document.getElementById('mail-badge');
+  if(!data){badge.style.display='none';return;}
+  const unread=Object.values(data).filter(m=>m.to===session.username && !m.read).length;
+  if(unread>0){badge.textContent=unread>9?'9+':unread;badge.style.display='block';}
+  else badge.style.display='none';
+}
+
 /* ---------- admin ---------- */
 function goAdmin(){showScreen('screen-admin');adminUnlocked?showAdminContent():showAdminLock();}
 function showAdminLock(){document.getElementById('admin-lock-overlay').style.display='flex';document.getElementById('admin-content').style.display='none';document.getElementById('admin-code-input').value='';document.getElementById('admin-code-error').style.display='none';}
@@ -694,21 +901,26 @@ async function renderAdminAccounts(names){
   const rows=await Promise.all(names.map(async n=>{
     const bal=(await dbGet(`balances/${n}`))??0;
     const role=await dbGet(`roles/${n}`);
+    const safeId=n.replace(/[^A-Za-z0-9_-]/g,'_');
     return `<div class="account-row">
-      <div class="ar-info"><div class="ar-name">${role==='admin'?'👑 ':''}${esc(n)}</div></div>
-      <div class="ar-bal">${Number(bal).toLocaleString()} CP</div>
-      <div class="ar-actions">
-        <button class="btn btn-green btn-xs" onclick="adminAdjustBalance('${n}',5)">+5</button>
-        <button class="btn btn-red btn-xs" onclick="adminAdjustBalance('${n}',-5)">-5</button>
+      <div class="ar-info"><div class="ar-name">${role==='admin'?'👑 ':''}${esc(n)}</div><div class="ar-id">${Number(bal).toLocaleString()} CP</div></div>
+      <div class="ar-actions" style="align-items:center;">
+        <input type="number" id="give-amt-${safeId}" placeholder="amount" style="width:90px;padding:.4rem .5rem;margin:0;font-size:.8rem;">
+        <button class="btn btn-green btn-xs" onclick="adminGiveAccount('${esc(n)}','${safeId}',1)">Give</button>
+        <button class="btn btn-red btn-xs" onclick="adminGiveAccount('${esc(n)}','${safeId}',-1)">Take</button>
       </div>
     </div>`;
   }));
   document.getElementById('admin-accounts-list').innerHTML=rows.join('');
 }
-async function adminAdjustBalance(name,delta){
+async function adminGiveAccount(name,safeId,sign){
+  const input=document.getElementById(`give-amt-${safeId}`);
+  const amt=parseFloat(input.value);
+  if(!amt || amt<=0){ input.focus(); return; }
   const cur=(await dbGet(`balances/${name}`))??0;
-  const next=Math.max(0,Math.round((cur+delta)*100)/100);
+  const next=Math.max(0,Math.round((cur+sign*amt)*100)/100);
   await dbPut(`balances/${name}`,next);
+  await dbPost('transactions',{from: sign>0?ADMIN_USERNAME:name, to: sign>0?name:ADMIN_USERNAME, amount:amt, time:new Date().toISOString()});
   loadAdminAccounts();
 }
 async function adminSearchAccounts(){

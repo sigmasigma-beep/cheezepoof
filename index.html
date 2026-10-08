@@ -250,6 +250,7 @@
       <div class="action-btn" onclick="openSendModal()"><span class="ab-icon">🧀</span><span class="ab-label">Send</span></div>
       <div class="action-btn" onclick="goWall()"><span class="ab-icon">📌</span><span class="ab-label">Wall</span></div>
       <div class="action-btn" onclick="goMail()"><span class="mail-badge" id="mail-badge">0</span><span class="ab-icon">📬</span><span class="ab-label">Mail</span></div>
+      <div class="action-btn" onclick="openProfileModal()"><span class="ab-icon">🖼️</span><span class="ab-label">Profile Pic</span></div>
       <div class="action-btn" onclick="goDirectory()"><span class="ab-icon">👥</span><span class="ab-label">Accounts</span></div>
       <div class="action-btn" onclick="goLedger()"><span class="ab-icon">📜</span><span class="ab-label">Tx Docs</span></div>
       <div class="action-btn" onclick="refreshData()"><span class="ab-icon">🔄</span><span class="ab-label">Refresh</span></div>
@@ -385,6 +386,24 @@
     <div class="error-msg" id="send-error"></div>
     <button class="btn btn-primary" onclick="doSend()">🧀 Send Poofs!</button>
     <button class="btn btn-secondary" onclick="closeSendModal()">Cancel</button>
+  </div>
+</div>
+
+<!-- PROFILE PIC MODAL -->
+<div class="modal-overlay" id="profile-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeProfileModal()">✕</button>
+    <h2>🖼️ Profile Picture</h2>
+    <div style="text-align:center;margin-bottom:1rem;">
+      <div class="avatar-circle" id="profile-preview" style="width:80px;height:80px;font-size:2rem;margin:0 auto;"></div>
+    </div>
+    <label>Image URL</label>
+    <input id="profile-avatar-url" placeholder="https://..." oninput="previewProfileAvatar()">
+    <p style="font-size:.78rem;color:#888;margin-top:-.4rem;">Paste a direct link to an image (ends in .jpg, .png, etc). Hosting services like Imgur work well.</p>
+    <div class="error-msg" id="profile-error"></div>
+    <div class="success-msg" id="profile-success"></div>
+    <button class="btn btn-primary" onclick="saveProfileAvatar()">Save</button>
+    <button class="btn btn-secondary" onclick="clearProfileAvatar()">Remove picture</button>
   </div>
 </div>
 
@@ -794,6 +813,38 @@ function playGiftSendAnimation(){
   }
   setTimeout(()=>{const p=document.createElement('div');p.className='gift-msg-popup';p.textContent='🧀 Poofs sent! ✨';document.body.appendChild(p);setTimeout(()=>p.remove(),2400);},300);
   setTimeout(()=>{overlay.classList.remove('active');overlay.innerHTML='';},2600);
+}
+
+/* ---------- profile pic ---------- */
+async function openProfileModal(){
+  if(!session) return;
+  const cur=(await dbGet(`profiles/${session.username}/avatar`))||'';
+  document.getElementById('profile-avatar-url').value=cur;
+  previewProfileAvatar();
+  document.getElementById('profile-error').style.display='none';
+  document.getElementById('profile-success').style.display='none';
+  document.getElementById('profile-modal').classList.add('active');
+}
+function closeProfileModal(){document.getElementById('profile-modal').classList.remove('active');}
+document.getElementById('profile-modal').addEventListener('click',function(e){if(e.target===this)closeProfileModal();});
+function previewProfileAvatar(){
+  const url=document.getElementById('profile-avatar-url').value.trim();
+  document.getElementById('profile-preview').innerHTML = avatarHTML(session?session.username:'?', /^https?:\/\//i.test(url)?url:'', 80);
+}
+async function saveProfileAvatar(){
+  const url=document.getElementById('profile-avatar-url').value.trim();
+  if(url && !/^https?:\/\//i.test(url)) return showError('profile-error','Enter a valid http(s) image URL.');
+  await dbPut(`profiles/${session.username}/avatar`, url || null);
+  showSuccess('profile-success','✅ Profile picture updated!');
+  await loadApp();
+  setTimeout(closeProfileModal, 900);
+}
+async function clearProfileAvatar(){
+  document.getElementById('profile-avatar-url').value='';
+  await dbDel(`profiles/${session.username}/avatar`);
+  previewProfileAvatar();
+  await loadApp();
+  showSuccess('profile-success','✅ Picture removed.');
 }
 
 /* ---------- mailbox ---------- */
